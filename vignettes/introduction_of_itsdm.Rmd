@@ -1,7 +1,7 @@
 ---
 title: "Introduction of `itsdm` with a virtual species"
 author: "Lei Song"
-date: "2022-01-03"
+date: "2022-01-10"
 output:
   rmarkdown::html_document:
     theme: readable
@@ -17,11 +17,13 @@ vignette: >
 
 Install your missing packages
 
+
 ```r
 install.packages('rnaturalearth')
 install.packages('here')
 install.packages('virtualspecies')
 ```
+
 
 ```r
 library(sf, quietly = T)
@@ -285,7 +287,7 @@ Here we build a SDM using extended isolation forest (with `ndim = 2`) and a samp
 it_sdm <- isotree_po(occ = occ_sf,
                      occ_test = occ_test_sf,
                      variables = variables,
-                     sample_rate = 0.8,
+                     sample_size = 0.8,
                      ndim = 2)
 ```
 
@@ -306,7 +308,7 @@ it_sdm$eval_test
 #> CVI with 0.25 threshold:      0.614
 #> CVI with 0.5 threshold:       0.810
 #> CVI with 0.75 threshold:      0.693
-#> CBI:                          0.998
+#> CBI:                          0.978
 #> AUC (ratio)                   0.942
 #> ===================================
 #> Presence-background evaluation:
@@ -366,20 +368,20 @@ it_sdm$variable_analysis
 #> bio12 With only: ####################################### 0.875
 #>       Without  : ########################################## 0.941
 #> bio15 With only: ############################### 0.696
-#>       Without  : ############################################ 0.972
+#>       Without  : ############################################ 0.973
 #> bio5  With only: ############################### 0.687
-#>       Without  : ############################################ 0.983
-#> bio1  With only: ######################### 0.564
-#>       Without  : ############################################ 0.978
+#>       Without  : ############################################ 0.984
+#> bio1  With only: ######################### 0.562
+#>       Without  : ############################################ 0.977
 #> [Test dataset]:
-#> bio12 With only: ####################################### 0.866
-#>       Without  : ########################################## 0.937
-#> bio5  With only: ################################ 0.704
-#>       Without  : ############################################ 0.983
+#> bio12 With only: ####################################### 0.865
+#>       Without  : ########################################## 0.938
+#> bio5  With only: ################################ 0.703
+#>       Without  : ############################################ 0.984
 #> bio15 With only: ############################### 0.69
 #>       Without  : ############################################ 0.974
-#> bio1  With only: ######################### 0.555
-#>       Without  : ############################################ 0.979
+#> bio1  With only: ######################### 0.554
+#>       Without  : ############################################ 0.978
 #> ======================================================================
 #> Jackknife test
 #> Based on AUC ratio (Max value of traing and test are 0.946 and 0.942)
@@ -387,17 +389,17 @@ it_sdm$variable_analysis
 #> bio12 With only: ######################################## 0.898
 #>       Without  : ######################################### 0.922
 #> bio5  With only: ##################################### 0.82
-#>       Without  : ########################################## 0.94
-#> bio15 With only: #################################### 0.8
+#>       Without  : ########################################## 0.941
+#> bio15 With only: #################################### 0.801
 #>       Without  : ########################################## 0.94
 #> bio1  With only: ################################## 0.761
 #>       Without  : ########################################## 0.942
 #> [Test dataset]:
 #> bio12 With only: ######################################## 0.878
 #>       Without  : ######################################### 0.919
-#> bio5  With only: #################################### 0.793
+#> bio5  With only: #################################### 0.791
 #>       Without  : ########################################## 0.936
-#> bio15 With only: ################################### 0.774
+#> bio15 With only: ################################### 0.773
 #>       Without  : ########################################## 0.936
 #> bio1  With only: ################################# 0.735
 #>       Without  : ########################################## 0.937
@@ -420,7 +422,7 @@ plot(it_sdm$variable_analysis)
 
 <img src="intro-variable_analysis-1.png" title="plot of chunk variable_analysis" alt="plot of chunk variable_analysis" style="display: block; margin: auto;" />
 
-According to the analysis, all explanatory variables contribute significantly to the model. This is predictable because the virtual species is made by these four variables. bio12 is the most important variable. 
+According to the analysis, all explanatory variables contribute significantly to the model. This is predictable because the virtual species is made by these four variables. bio12 is the most important variable.
 
 Besides the regular response curves, `itsdm` also makes spatially partial dependence maps. By default in `isotree_po`, Shapley value-based spatial dependence maps are not generated because of the computational efficiency. The user could generate these maps by calling function `spatial_response` later after getting the model done.
 
@@ -465,7 +467,7 @@ pa_map; plot(pa_map)
 
 <img src="intro-pa-1.png" title="plot of chunk pa" alt="plot of chunk pa" style="display: block; margin: auto;" />
 
-## Analyze vairable dependence
+## Analyze variable dependence
 
 It is always helpful to understand the dependence among variables. The result of function `shap_dependence` or `it_sdm$shap_dependence` can be used to analyze variable dependence with each other.
 
@@ -512,10 +514,10 @@ For example, No.2 observation is decided largely by bio15 and bio5 negatively. L
 
 ```r
 ggplot() +
-  geom_stars(data = spatial_responses_all$spatial_shap_dependence$bio15) + 
+  geom_stars(data = spatial_responses_all$spatial_shap_dependence$bio15) +
   scale_fill_distiller('SHAP-based effect', palette = "RdYlBu",
                        na.value = "transparent") +
-  geom_sf(data = it_sdm$var_test %>% slice(2), 
+  geom_sf(data = it_sdm$var_test %>% slice(2),
           color = 'blue', pch = 1) +
   theme_linedraw()
 ```

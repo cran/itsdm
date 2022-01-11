@@ -40,7 +40,7 @@
 #' mod <- isotree_po(
 #'   occ = occ, occ_test = occ_test,
 #'   variables = env_vars, ntrees = 50,
-#'   sample_rate = 0.8, ndim = 3L,
+#'   sample_size = 0.8, ndim = 3L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
@@ -256,7 +256,7 @@ print.VariableAnalysis <- function(x, ...){
 #' mod <- isotree_po(
 #'   occ = occ, occ_test = occ_test,
 #'   variables = env_vars, ntrees = 50,
-#'   sample_rate = 0.8, ndim = 2L,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
@@ -277,7 +277,7 @@ print.POEvaluation <- function(x, ...){
   cvi75 <- po_eval$cvi$`cvi with 0.75`
 
   # CBI with 100 moving windows
-  cbi <- po_eval$boyce$Spearman.cor
+  cbi <- po_eval$boyce$cor
 
   # AUC_ratio
   auc_r <- po_eval$roc_ratio$auc_ratio
@@ -413,7 +413,7 @@ print.ReducedImageStack <- function(x, ...) {
 #' mod <- isotree_po(
 #'   occ = occ, occ_test = occ_test,
 #'   variables = env_vars, ntrees = 50,
-#'   sample_rate = 0.8, ndim = 1L,
+#'   sample_size = 0.8, ndim = 1L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
@@ -528,7 +528,7 @@ print.EnvironmentalOutlier <- function(x, ...) {
 #' mod <- isotree_po(
 #'   occ = occ, occ_test = occ_test,
 #'   variables = env_vars, ntrees = 50,
-#'   sample_rate = 0.8, ndim = 1L,
+#'   sample_size = 0.8, ndim = 1L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE)
 #' print(mod)

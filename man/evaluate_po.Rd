@@ -82,6 +82,8 @@ extracting background points as pseudo absence observations.
 a threshold (\code{0.5} for example) habitat suitability index minus
 the proportion of cells within this range of threshold of the model.
 Here we used varied thresholds: \code{0.25}, \code{0.5}, and \code{0.75}.}
+\item{\bold{continuous Boyce index (CBI)} is made with a 100 resolution of
+moving windows and Kendall method.}
 \item{
 \bold{ROC_ratio} curve plots the proportion of presences falling above a
 range of thresholds against the proportion of cells falling
@@ -122,7 +124,7 @@ env_vars <- system.file(
 mod <- isotree_po(
   occ = occ, occ_test = occ_test,
   variables = env_vars, ntrees = 50,
-  sample_rate = 0.8, ndim = 2L,
+  sample_size = 0.8, ndim = 2L,
   seed = 123L, response = FALSE,
   spatial_response = FALSE,
   check_variable = FALSE)
@@ -131,6 +133,7 @@ eval_train <- evaluate_po(mod$model,
   occ_pred = mod$pred_train$prediction,
   var_pred = na.omit(as.vector(mod$prediction[[1]])))
 print(eval_train)
+plot(eval_train)
 
 }
 \references{
