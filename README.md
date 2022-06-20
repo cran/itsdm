@@ -40,6 +40,9 @@ This is a basic example which shows you how to solve a common problem:
 
 ``` r
 library(itsdm)
+library(dplyr)
+library(stars)
+library(ggplot2)
 
 # Using a pseudo presence-only occurrence dataset of
 # virtual species provided in this package
@@ -58,13 +61,13 @@ occ_test <- occ_test %>% select(-id)
 env_vars <- system.file(
   'extdata/bioclim_tanzania_10min.tif',
   package = 'itsdm') %>% read_stars() %>%
-  %>% slice('band', c(1, 6, 12, 15))
+  slice('band', c(1, 6, 12, 15))
 
 # Train the model
 mod <- isotree_po(
   occ = occ, occ_test = occ_test,
   variables = env_vars, ntrees = 200,
-  sample_rate = 0.8, ndim = 2L,
+  sample_size = 0.8, ndim = 2L,
   seed = 123L)
 
 # Check results
@@ -80,6 +83,12 @@ ggplot() +
 plot(mod$independent_responses, 
   target_var = c('bio1', 'bio12'))
 ```
+
+## Contributor
+
+1. [David Cortes](https://github.com/david-cortes), helps to improve the flexibility of calling `isotree`.
+
+We are welcome any helps! Please make a pull request or reach out to lsong@clarku.edu if you want to make any contribution.
 
 ## Funding
 This package is part of project "Combining Spatially-explicit Simulation of Animal Movement and Earth Observation to Reconcile Agriculture and Wildlife Conservation". This project is funded by NASA FINESST program (award number: 80NSSC20K1640).
