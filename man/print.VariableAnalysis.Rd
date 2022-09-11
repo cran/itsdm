@@ -19,6 +19,12 @@ The same object that was passed as input.
 Display the most general and informative characteristics of
 a variable importance object.
 }
+\details{
+For Jackknife test, if the value is positive, print as "/".
+If the value is negative, then print as "\". For Shapley values based test,
+print as "#" since there is no negative value and in order to distinguish
+this characteristic with Jackknife test.
+}
 \examples{
 \donttest{
 # Using a pseudo presence-only occurrence dataset of

@@ -12,6 +12,12 @@
 #' @seealso
 #' \code{\link{variable_analysis}}, \code{\link{plot.VariableAnalysis}}
 #'
+#' @details
+#' For Jackknife test, if the value is positive, print as "/".
+#' If the value is negative, then print as "\". For Shapley values based test,
+#' print as "#" since there is no negative value and in order to distinguish
+#' this characteristic with Jackknife test.
+#'
 #' @export
 #' @examples
 #' \donttest{
@@ -81,12 +87,18 @@ print.VariableAnalysis <- function(x, ...){
     # print
     var <- ifelse(length(var) >= 20, var[1:20], var)
     n_space <- min(n_max, 20)
+
+    char_use <- ifelse(only >= 0, "/", "\\")
+    char_len <- abs(round(only * 45))
     cat(paste0(str_pad(var, n_space, side = 'right', pad = ' '),
                ' With only: ',
-               paste(rep('#', round(only * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(only, 3))))
+
+    char_use <- ifelse(without >= 0, "/", "\\")
+    char_len <- abs(round(without * 45))
     cat(paste0(str_pad('', n_space, side = 'right', pad = ' '), ' Without  : ',
-               paste(rep('#', round(without * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(without, 3))))
   }))
 
@@ -104,12 +116,18 @@ print.VariableAnalysis <- function(x, ...){
     # print
     var <- ifelse(length(var) >= 20, var[1:20], var)
     n_space <- min(n_max, 20)
+
+    char_use <- ifelse(only >= 0, "/", "\\")
+    char_len <- abs(round(only * 45))
     cat(paste0(str_pad(var, n_space, side = 'right', pad = ' '),
                ' With only: ',
-               paste(rep('#', round(only * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(only, 3))))
+
+    char_use <- ifelse(without >= 0, "/", "\\")
+    char_len <- abs(round(without * 45))
     cat(paste0(str_pad('', n_space, side = 'right', pad = ' '), ' Without  : ',
-               paste(rep('#', round(without * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(without, 3))))
   }))
   cat(paste0(c(rep('=', 70), '\n'), collapse = ''))
@@ -136,12 +154,18 @@ print.VariableAnalysis <- function(x, ...){
     # print
     var <- ifelse(length(var) >= 20, var[1:20], var)
     n_space <- min(n_max, 20)
+
+    char_use <- ifelse(only >= 0, "/", "\\")
+    char_len <- abs(round(only * 45))
     cat(paste0(str_pad(var, n_space, side = 'right', pad = ' '),
                ' With only: ',
-               paste(rep('#', round(only * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(only, 3))))
+
+    char_use <- ifelse(without >= 0, "/", "\\")
+    char_len <- abs(round(without * 45))
     cat(paste0(str_pad('', n_space, side = 'right', pad = ' '), ' Without  : ',
-               paste(rep('#', round(without * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(without, 3))))
   }))
 
@@ -159,12 +183,18 @@ print.VariableAnalysis <- function(x, ...){
     # print
     var <- ifelse(length(var) >= 20, var[1:20], var)
     n_space <- min(n_max, 20)
+
+    char_use <- ifelse(only >= 0, "/", "\\")
+    char_len <- abs(round(only * 45))
     cat(paste0(str_pad(var, n_space, side = 'right', pad = ' '),
                ' With only: ',
-               paste(rep('#', round(only * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(only, 3))))
+
+    char_use <- ifelse(without >= 0, "/", "\\")
+    char_len <- abs(round(without * 45))
     cat(paste0(str_pad('', n_space, side = 'right', pad = ' '), ' Without  : ',
-               paste(rep('#', round(without * 45)), collapse = ''),
+               paste(rep(char_use, char_len), collapse = ''),
                sprintf(' %s\n', round(without, 3))))
   }))
   cat(paste0(c(rep('=', 70), '\n'), collapse = ''))
@@ -195,6 +225,8 @@ print.VariableAnalysis <- function(x, ...){
     # print
     var <- ifelse(length(var) >= 20, var[1:20], var)
     n_space <- min(n_max, 20)
+
+    # The values here must be non-negative
     cat(paste0(str_pad(var, n_space, side = 'right', pad = ' '),
                ' : ',
                paste(rep('#', round(val / val_max * 45)), collapse = ''),
@@ -208,6 +240,8 @@ print.VariableAnalysis <- function(x, ...){
     # print
     var <- ifelse(length(var) >= 20, var[1:20], var)
     n_space <- min(n_max, 20)
+
+    # The values here must be non-negative
     cat(paste0(str_pad(var, n_space, side = 'right', pad = ' '),
                ' : ',
                paste(rep('#', round(val / val_max * 45)), collapse = ''),
