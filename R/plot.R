@@ -91,8 +91,9 @@
 }
 # .plot_response end
 
-#' @title Function to plot marginal response curves.
-#' @description Plot marginal response curves using ggplot2.
+#' @title Show marginal response curves.
+#' @description Plot marginal response curves using ggplot2 by optionally set
+#' target variable(s).
 #' @param x (`MarginalResponse`) The marginal response curve object to plot.
 #' It could be the return of function \code{\link{marginal_response}}.
 #' @param target_var (`vector` of `character`) The target variable to plot. It could be
@@ -116,24 +117,31 @@
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
 #'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
@@ -141,7 +149,7 @@
 #'
 #' marginal_responses <- marginal_response(
 #'   model = mod$model,
-#'   var_occ = mod$var_train %>% st_drop_geometry(),
+#'   var_occ = mod$vars_train,
 #'   variables = mod$variables)
 #' plot(marginal_responses, target_var = 'bio1')
 #'}
@@ -170,8 +178,9 @@ plot.MarginalResponse <- function(x,
   .plot_responses(x, smooth_span)
 }
 
-#' @title Function to plot independent response curves.
-#' @description Plot independent response curves using ggplot2.
+#' @title Show independent response curves.
+#' @description Plot independent response curves using ggplot2 by optionally
+#' set target variable(s).
 #' @param x (`IndependentResponse`) The independent response curve object to plot.
 #' It could be the return of function \code{\link{independent_response}}.
 #' @param target_var (`vector` of `character`) The target variable to plot. It could be
@@ -196,24 +205,31 @@ plot.MarginalResponse <- function(x,
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
 #'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
@@ -221,7 +237,7 @@ plot.MarginalResponse <- function(x,
 #'
 #' independent_responses <- independent_response(
 #'   model = mod$model,
-#'   var_occ = mod$var_train %>% st_drop_geometry(),
+#'   var_occ = mod$vars_train,
 #'   variables = mod$variables)
 #' plot(independent_responses)
 #'}
@@ -250,8 +266,11 @@ plot.IndependentResponse <- function(x,
   .plot_responses(x, smooth_span)
 }
 
-#' @title Function to plot variable dependence obtained from SHAP test.
-#' @description Plot variable dependence curves using ggplot2.
+#' @title Show variable dependence plots and variable interaction plots
+#' obtained from Shapley values.
+#' @description Plot Shapley value-based variable dependence curves using
+#' ggplot2 by optionally selecting target variable(s). It also can plot the
+#' interaction between a related variable to the selected variable(s).
 #' @param x (`ShapDependence`) The variable dependence object to plot.
 #' It could be the return of function \code{\link{shap_dependence}}.
 #' @param target_var (`vector` of `character`) The target variable to plot. It could be
@@ -269,7 +288,10 @@ plot.IndependentResponse <- function(x,
 #' @param seed (`integer`) The seed for sampling.
 #' It will be ignored if the number of points is less than 1000.
 #' The default is 123.
-#' @param ... Not used.
+#' @param ... Other arguments passed on to \code{\link{geom_smooth}}. Mainly
+#' `method` and `formula` to fit the smooth line. Note that the same arguments
+#' will be used for all target variables. User could set variable one by one to
+#' set the arguments separately.
 #' @return `ggplot2` figure of dependent curves
 #' @seealso
 #' \code{\link{shap_dependence}}
@@ -294,31 +316,40 @@ plot.IndependentResponse <- function(x,
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 3L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
+#'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
 #' var_dependence <- shap_dependence(
 #'   model = mod$model,
-#'   var_occ = mod$var_train %>% st_drop_geometry())
+#'   var_occ = mod$vars_train,
+#'   variables = mod$variables)
 #' plot(var_dependence, target_var = 'bio1', related_var = 'bio12')
 #'}
 #'
@@ -395,7 +426,7 @@ plot.ShapDependence <- function(x,
         theme_linedraw()
       if (smooth_line) {
         g_cont <- g_cont +
-          geom_smooth(color = 'red', alpha = 0)
+          geom_smooth(color = 'red', alpha = 0, ...)
       }
     } else g_cont <- NULL
 
@@ -490,7 +521,7 @@ plot.ShapDependence <- function(x,
       }
       if (smooth_line) {
         g_cont <- g_cont +
-          geom_smooth(color = 'red', alpha = 0)
+          geom_smooth(color = 'red', alpha = 0, ...)
       }
     } else g_cont <- NULL
 
@@ -561,8 +592,9 @@ plot.ShapDependence <- function(x,
   }
 }
 
-#' @title Function to plot spatial variable dependence maps.
-#' @description Plot spatial variable dependence maps using ggplot2.
+#' @title Display spatial variable dependence maps.
+#' @description Plot spatial variable dependence maps using ggplot2 by
+#' optionally setting target variable(s).
 #' @param x (`SpatialResponse`) The spatial variable dependence object to plot.
 #' It could be the return of function \code{\link{spatial_response}}.
 #' @param target_var (`vector` of `character`) The target variable to plot.
@@ -586,33 +618,41 @@ plot.ShapDependence <- function(x,
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 3L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
 #' spatial_responses <- spatial_response(
 #'   model = mod$model,
-#'   var_occ = mod$var_train %>% st_drop_geometry(),
-#'   variables = mod$variables)
+#'   var_occ = mod$vars_train,
+#'   variables = mod$variables,
+#'   shap_nsim = 10)
 #' plot(spatial_responses)
 #' plot(spatial_responses, target_var = 'bio1')
 #'}
@@ -738,9 +778,10 @@ plot.SpatialResponse <- function(x,
   }
 }
 
-#' @title Function to plot variable contribution for target observations.
-#' @description Plot variable contribution for target observation separately
-#' or together using ggplot2.
+#' @title Exhibit variable contribution for target observations.
+#' @description Use ggplot2 to plot variable contribution for each target
+#' observation separately or summarize the overall variable contribution across
+#' all selected observations.
 #' @param x (`VariableContribution`) The `VariableContribution` object to plot.
 #' It could be the return of function \code{\link{variable_contrib}}.
 #' @param plot_each_obs (`logical`) The option of plot type. If `TRUE`, it will
@@ -766,37 +807,47 @@ plot.SpatialResponse <- function(x,
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 1L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
 #' var_contribution <- variable_contrib(
 #'   model = mod$model,
-#'   var_occ = mod$var_train %>% st_drop_geometry(),
-#'   var_occ_analysis = mod$var_train %>%
-#'     st_drop_geometry() %>% slice(1:10))
+#'   var_occ = mod$vars_train,
+#'   var_occ_analysis = mod$vars_train %>% slice(1:10))
+#'
+#' # Plot variable contribution to each observation
 #' plot(var_contribution,
-#'   plot_each_obs = TRUE,
-#'   num_features = 3)
+#'      plot_each_obs = TRUE,
+#'      num_features = 3)
+#'
+#' # Plot the summarized contribution
 #' plot(var_contribution)
 #'}
 #'
@@ -882,7 +933,7 @@ plot.VariableContribution <- function(x,
   }
 }
 
-#' @title Function to plot variable importance.
+#' @title Display variable importance.
 #' @description Display informative and detailed figures of variable importance.
 #' @param x (`VariableAnalysis`) The variable importance object to plot.
 #' It could be the return of function \code{\link{variable_analysis}}.
@@ -907,33 +958,40 @@ plot.VariableContribution <- function(x,
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 1L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
 #' var_analysis <- variable_analysis(
 #'   model = mod$model,
-#'   pts_occ = mod$pts_occ,
-#'   pts_occ_test = mod$pts_occ_test,
+#'   pts_occ = mod$observation,
+#'   pts_occ_test = mod$independent_test,
 #'   variables = mod$variables)
 #' plot(var_analysis)
 #'}
@@ -1161,9 +1219,9 @@ plot.VariableAnalysis <- function(x, ...) {
     (g_shap_train | g_shap_test)
 }
 
-#' @title Function to plot presence-only evaluation.
+#' @title Show model evaluation.
 #' @description Display informative and detailed figures of continuous Boyce
-#' index and AUC curves.
+#' index, AUC curves, and TSS curve.
 #' @param x (`POEvaluation`) The presence-only evaluation object to plot.
 #' It could be the return of function \code{\link{evaluate_po}}.
 #' @param ... Not used.
@@ -1184,30 +1242,38 @@ plot.VariableAnalysis <- function(x, ...) {
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
 #'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
-#' eval_train <- evaluate_po(mod$model,
+#' eval_train <- evaluate_po(
+#'   mod$model,
 #'   occ_pred = mod$pred_train$prediction,
 #'   var_pred = na.omit(as.vector(mod$prediction[[1]])))
 #'
@@ -1347,9 +1413,9 @@ plot.POEvaluation <- function(x, ...) {
   }
 }
 
-#' @title Function to plot results of conversion to PA.
+#' @title Display results of conversion to presence-absence (PA).
 #' @description Display raster of suitability, probability of occurrence,
-#' presence-absence binary map from PA conversion.
+#' presence-absence binary map from presence-absence (PA) conversion.
 #' @param x (`PAConversion`) The `PAConversion` object to plot.
 #' It could be the return of function \code{\link{convert_to_pa}}.
 #' @param ... Not used.
@@ -1372,25 +1438,32 @@ plot.POEvaluation <- function(x, ...) {
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 1L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
@@ -1435,8 +1508,9 @@ plot.PAConversion <- function(x, ...) {
   g1 / g2 / g3
 }
 
-#' @title Function to plot suspicious outliers in an observation dataset.
-#' @description Display observations and outliers in a dataset.
+#' @title Exhibit suspicious outliers in an observation dataset.
+#' @description Display observations and potential outliers diagnosed by
+#' function \code{\link{suspicious_env_outliers}} in a dataset.
 #' @param x (`EnvironmentalOutlier`) The PAConversion object to plot.
 #' It could be the return of function \code{\link{suspicious_env_outliers}}.
 #' @param overlay_raster (`RasterLayer` or `stars`) The environmental raster to plot
@@ -1537,3 +1611,182 @@ plot.EnvironmentalOutlier <- function(x,
   }
 
 }
+
+#' @title Display the figure and map of the `EnviChange` object.
+#' @description Show the response curve and the map of contribution change from
+#' \code{\link{detect_envi_change}}.
+#' @param x (`EnviChange`) A `EnviChange` object to be messaged.
+#' It could be the return of function \code{\link{detect_envi_change}}.
+#' @param ... Not used.
+#' @return The same object that was passed as input.
+#' @seealso
+#' \code{\link{detect_envi_change}}
+#'
+#' @import patchwork
+#'
+#' @export
+#' @examples
+#' \donttest{
+#' # Using a pseudo presence-only occurrence dataset of
+#' # virtual species provided in this package
+#' library(dplyr)
+#' library(sf)
+#' library(stars)
+#' library(itsdm)
+#' #'
+#' # Prepare data
+#' data("occ_virtual_species")
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
+#' #'
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
+#' #'
+#' env_vars <- system.file(
+#'   'extdata/bioclim_tanzania_10min.tif',
+#'   package = 'itsdm') %>% read_stars() %>%
+#'   slice('band', c(1, 5, 12))
+#' #'
+#' # With imperfect_presence mode,
+#' mod <- isotree_po(
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 10,
+#'   sample_size = 0.8, ndim = 1L,
+#'   seed = 123L, response = FALSE,
+#'   spatial_response = FALSE,
+#'   check_variable = FALSE)
+#'
+#' # Use a fixed value
+#' bio1_changes <- detect_envi_change(
+#'   model = mod$model,
+#'   var_occ = mod$vars_train,
+#'   variables = mod$variables,
+#'   shap_nsim = 1,
+#'   target_var = "bio1",
+#'   var_future = 5)
+#'
+#' plot(bio1_changes)
+#'}
+#'
+plot.EnviChange <- function(x, ...) {
+  x$p_curve + x$p_map
+}
+
+#' @title Display Shapley values-based spatial variable dependence maps.
+#' @description Plot Shapley values-based spatial variable dependence maps
+#' using ggplot2 by optionally setting target variable(s). This only works for
+#' `SHAPSpatial` even though it is part of `SpatialResponse`.
+#' @param x (`SHAPSpatial`) The spatial variable dependence object to plot.
+#' It could be the return of function \code{\link{shap_spatial_response}}.
+#' @param target_var (`vector` of `character`) The target variable to plot.
+#' It could be `NA`. If it is `NA`, all variables will be plotted.
+#' @param ... Not used.
+#' @return `ggplot2` figure of dependent maps
+#' @seealso
+#' \code{\link{spatial_response}}
+#'
+#' @import ggplot2
+#' @importFrom stars st_set_dimensions
+#' @export
+#' @examples
+#' \donttest{
+#' # Using a pseudo presence-only occurrence dataset of
+#' # virtual species provided in this package
+#' library(dplyr)
+#' library(sf)
+#' library(stars)
+#' library(itsdm)
+#'
+#' # Prepare data
+#' data("occ_virtual_species")
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
+#'
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
+#'
+#' env_vars <- system.file(
+#'   'extdata/bioclim_tanzania_10min.tif',
+#'   package = 'itsdm') %>% read_stars() %>%
+#'   slice('band', c(1, 5, 12))
+#'
+#' # With imperfect_presence mode,
+#' mod <- isotree_po(
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
+#'   seed = 123L, response = FALSE,
+#'   spatial_response = FALSE,
+#'   check_variable = FALSE)
+#'
+#' shap_spatial <- shap_spatial_response(
+#'  model = mod$model,
+#'  target_vars = c("bio1", "bio12"),
+#'  var_occ = mod$vars_train,
+#'  variables = mod$variables,
+#'  shap_nsim = 1)
+#'
+#' plot(shap_spatial)
+#' plot(shap_spatial, target_var = "bio1")
+#'}
+#'
+plot.SHAPSpatial <- function(x,
+                             target_var = NA,
+                             ...) {
+  # Checking
+  nms <- names(x)
+  checkmate::assert_character(target_var, min.len = 0)
+  if (!all(is.na(target_var))) {
+    stopifnot(all(target_var %in% nms))}
+
+  # Subset
+  if (!all(is.na(target_var))) x <- x[target_var]
+
+  if (length(names(x)) > 1) {
+    # SHAP plot
+    ggplot() +
+      geom_stars(
+        data = do.call(c, x) %>%
+          merge(name = 'band') %>%
+          st_set_dimensions('band',
+                            values = names(x))) +
+      scale_fill_distiller('Value', palette = "RdYlBu",
+                           na.value = "transparent") +
+      ggtitle(sprintf('SHAP-based effect of %s', 'variables')) +
+      coord_equal() +
+      facet_wrap(~band) +
+      theme_void() +
+      theme(plot.title = element_text(face = 'bold.italic', hjust = 0.5),
+            strip.text.x = element_text(size = 12, face = "bold.italic"))
+  } else {
+    # SHAP plot
+    ggplot() +
+      geom_stars(
+        data = do.call(c, x)) +
+      scale_fill_distiller('Value', palette = "RdYlBu",
+                           na.value = "transparent") +
+      ggtitle(sprintf('SHAP-based effect of %s',
+                      names(x))) +
+      coord_equal() +
+      theme_void() +
+      theme(plot.title = element_text(face = 'bold.italic', hjust = 0.5),
+            strip.text.x = element_text(size = 12, face = "bold.italic"))
+  }
+}
+# end of plot.SHAPSpatial

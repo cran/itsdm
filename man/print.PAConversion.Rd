@@ -2,7 +2,7 @@
 % Please edit documentation in R/print.R
 \name{print.PAConversion}
 \alias{print.PAConversion}
-\title{Print summary information from PAConversion object.}
+\title{Print summary information from \code{PAConversion} object.}
 \usage{
 \method{print}{PAConversion}(x, ...)
 }
@@ -16,8 +16,7 @@ It could be the return of function \code{\link{convert_to_pa}}.}
 The same object that was passed as input.
 }
 \description{
-Display the most general and informative characteristics of
-a PAConversion object.
+Display the equation and parameters of a \code{PAConversion} object.
 }
 \examples{
 \donttest{
@@ -28,25 +27,32 @@ library(sf)
 library(stars)
 library(itsdm)
 
+# Prepare data
 data("occ_virtual_species")
-occ_virtual_species <- occ_virtual_species \%>\%
-  mutate(id = row_number())
+obs_df <- occ_virtual_species \%>\% filter(usage == "train")
+eval_df <- occ_virtual_species \%>\% filter(usage == "eval")
+x_col <- "x"
+y_col <- "y"
+obs_col <- "observation"
 
-set.seed(11)
-occ <- occ_virtual_species \%>\% sample_frac(0.7)
-occ_test <- occ_virtual_species \%>\% filter(! id \%in\% occ$id)
-occ <- occ \%>\% select(-id)
-occ_test <- occ_test \%>\% select(-id)
+# Format the observations
+obs_train_eval <- format_observation(
+  obs_df = obs_df, eval_df = eval_df,
+  x_col = x_col, y_col = y_col, obs_col = obs_col,
+  obs_type = "presence_only")
 
 env_vars <- system.file(
   'extdata/bioclim_tanzania_10min.tif',
   package = 'itsdm') \%>\% read_stars() \%>\%
   slice('band', c(1, 5, 12, 16))
 
+# With imperfect_presence mode,
 mod <- isotree_po(
-  occ = occ, occ_test = occ_test,
-  variables = env_vars, ntrees = 50,
-  sample_size = 0.8, ndim = 1L,
+  obs_mode = "imperfect_presence",
+  obs = obs_train_eval$obs,
+  obs_ind_eval = obs_train_eval$eval,
+  variables = env_vars, ntrees = 20,
+  sample_size = 0.8, ndim = 2L,
   seed = 123L, response = FALSE,
   spatial_response = FALSE,
   check_variable = FALSE)

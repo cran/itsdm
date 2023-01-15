@@ -2,7 +2,8 @@
 % Please edit documentation in R/plot.R
 \name{plot.ShapDependence}
 \alias{plot.ShapDependence}
-\title{Function to plot variable dependence obtained from SHAP test.}
+\title{Show variable dependence plots and variable interaction plots
+obtained from Shapley values.}
 \usage{
 \method{plot}{ShapDependence}(
   x,
@@ -40,13 +41,18 @@ The default is 100.}
 It will be ignored if the number of points is less than 1000.
 The default is 123.}
 
-\item{...}{Not used.}
+\item{...}{Other arguments passed on to \code{\link{geom_smooth}}. Mainly
+\code{method} and \code{formula} to fit the smooth line. Note that the same arguments
+will be used for all target variables. User could set variable one by one to
+set the arguments separately.}
 }
 \value{
 \code{ggplot2} figure of dependent curves
 }
 \description{
-Plot variable dependence curves using ggplot2.
+Plot Shapley value-based variable dependence curves using
+ggplot2 by optionally selecting target variable(s). It also can plot the
+interaction between a related variable to the selected variable(s).
 }
 \details{
 If the number of samples is more than 1000, a stratified sampling is used to
@@ -62,31 +68,40 @@ library(sf)
 library(stars)
 library(itsdm)
 
+# Prepare data
 data("occ_virtual_species")
-occ_virtual_species <- occ_virtual_species \%>\%
-  mutate(id = row_number())
+obs_df <- occ_virtual_species \%>\% filter(usage == "train")
+eval_df <- occ_virtual_species \%>\% filter(usage == "eval")
+x_col <- "x"
+y_col <- "y"
+obs_col <- "observation"
 
-set.seed(11)
-occ <- occ_virtual_species \%>\% sample_frac(0.7)
-occ_test <- occ_virtual_species \%>\% filter(! id \%in\% occ$id)
-occ <- occ \%>\% select(-id)
-occ_test <- occ_test \%>\% select(-id)
+# Format the observations
+obs_train_eval <- format_observation(
+  obs_df = obs_df, eval_df = eval_df,
+  x_col = x_col, y_col = y_col, obs_col = obs_col,
+  obs_type = "presence_only")
 
 env_vars <- system.file(
   'extdata/bioclim_tanzania_10min.tif',
   package = 'itsdm') \%>\% read_stars() \%>\%
   slice('band', c(1, 5, 12, 16))
 
+# With imperfect_presence mode,
 mod <- isotree_po(
-  occ = occ, occ_test = occ_test,
-  variables = env_vars, ntrees = 50,
-  sample_size = 0.8, ndim = 3L,
+  obs_mode = "imperfect_presence",
+  obs = obs_train_eval$obs,
+  obs_ind_eval = obs_train_eval$eval,
+  variables = env_vars, ntrees = 20,
+  sample_size = 0.8, ndim = 2L,
   seed = 123L, response = FALSE,
+  spatial_response = FALSE,
   check_variable = FALSE)
 
 var_dependence <- shap_dependence(
   model = mod$model,
-  var_occ = mod$var_train \%>\% st_drop_geometry())
+  var_occ = mod$vars_train,
+  variables = mod$variables)
 plot(var_dependence, target_var = 'bio1', related_var = 'bio12')
 }
 

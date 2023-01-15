@@ -1,6 +1,7 @@
-#' @title Calculate spatial response or dependence plot.
+#' @title Calculate spatial response or dependence figures.
 #' @description Calculate spatially marginal, independence, and SHAP-based
-#' response plots.
+#' response figures. They can help to diagnose both how and where the species
+#' responses to environmental variables.
 #' @param model (`isolation_forest`). It could
 #' be the item `model` of `POIsotree` made by function \code{\link{isotree_po}}.
 #' @param var_occ (`data.frame`, `tibble`) The `data.frame` style table that
@@ -61,23 +62,30 @@
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
 #'   variables = env_vars, ntrees = 20,
 #'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
@@ -86,11 +94,11 @@
 #'
 #' spatial_responses <- spatial_response(
 #'   model = mod$model,
-#'   var_occ = mod$var_train %>% st_drop_geometry(),
+#'   var_occ = mod$vars_train,
 #'   variables = mod$variables,
 #'   shap_nsim = 1)
 #' plot(spatial_responses)
-#'
+#' #'
 spatial_response <- function(model,
                              var_occ,
                              variables,
@@ -151,7 +159,8 @@ spatial_response <- function(model,
       model$params
     )
     args_iforest$ndim <- 1
-    args_iforest$ncols_per_tree <- min(ncol(args_iforest$data), args_iforest$ncols_per_tree)
+    args_iforest$ncols_per_tree <- min(ncol(args_iforest$data),
+                                       args_iforest$ncols_per_tree)
     if (args_iforest$new_categ_action == "impute") {
       args_iforest$new_categ_action <- "weighted"
     }
@@ -168,54 +177,13 @@ spatial_response <- function(model,
 
   ############ SHAP variable dependence
   if (shap_nsim > 0){
-    # Do SHAP
-    set.seed(seed)
-    x_shap <- variables %>% as.data.frame()
-    val_ids <- apply(x_shap[-c(1,2)], 1, function(x) all(!is.na(x)))
-
-    # Calculate Shapley values for full records
-    shap_explain <- explain(
-      model,
-      X = x_shap %>% filter(val_ids) %>% select(bands),
-      nsim = shap_nsim,
-      pred_wrapper = .pfun_shap)
-
-    # Mosaic back the background pixels
-    x_shap[] <- sapply(x_shap, as.numeric)
-    x_shap[!val_ids, bands] <- NA
-    x_shap[val_ids, ] <- cbind(
-      x_shap %>% filter(val_ids) %>% select(.data$x, .data$y),
-      shap_explain)
-    shap_spatial <- lapply(bands, function(nm) {
-      # Continuous variables
-      if (nm %in% bands_cont) {
-        # Burn values
-        variables[nm] %>%
-          mutate('{nm}' := x_shap %>% pull(nm)) %>%
-          select(all_of(nm))
-        # Categorical variables
-        ## Each class should have the same value, so aggregate to
-        ## each class with mean function
-        } else if (nm %in% bands_cat) {
-        # Get convert table
-        convert_tb <- data.frame(
-          shap = x_shap %>% pull(nm),
-          class = variables[[nm]] %>% as.vector()) %>%
-          group_by(class) %>%
-          summarise(shap = mean(.data$shap, na.rm = T)) %>%
-          mutate(class = as.integer(.data$class))
-
-        # Generate stars template
-        rst_raw <- variables[nm]
-        rst_raw[[nm]] <- as.integer(levels(rst_raw[[nm]]))[rst_raw[[nm]]]
-
-        # Replace class value with shap value
-        for (i in 1:nrow(convert_tb)) {
-          rst_raw[rst_raw == convert_tb[[i, 'class']]] <- convert_tb[i, 'shap']}
-        rst_raw
-        }
-      })
-    names(shap_spatial) <- bands
+    shap_spatial <- shap_spatial_response(
+      model = model,
+      var_occ = var_occ,
+      variables = variables,
+      shap_nsim = shap_nsim,
+      seed = seed,
+      pfun = .pfun_shap)
   } else {
     shap_spatial <- NULL
   }
@@ -228,7 +196,7 @@ spatial_response <- function(model,
 
   # Visualize
   if (visualize) {
-    plot(spatial_deps)
+    print(plot(spatial_deps))
   }
 
   # Return

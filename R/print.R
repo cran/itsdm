@@ -1,6 +1,7 @@
-#' @title Print summary information from variable importance object.
-#' @description Display the most general and informative characteristics of
-#' a variable importance object.
+#' @title Print summary information from variable importance object
+#' (`VariableAnalysis`).
+#' @description Display non-visualized information of a `VariableAnalysis`
+#' object returned by function \code{\link{variable_analysis}}.
 #' @param x (`VariableAnalysis`) A variable importance object to be messaged.
 #' It could be the return of function \code{\link{variable_analysis}}.
 #' @param ... Not used.
@@ -28,36 +29,43 @@
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 3L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
 #' var_analysis <- variable_analysis(
 #'   model = mod$model,
-#'   pts_occ = mod$pts_occ,
-#'   pts_occ_test = mod$pts_occ_test,
+#'   pts_occ = mod$observation,
+#'   pts_occ_test = mod$independent_test,
 #'   variables = mod$variables)
 #'
-#' print(variable_analysis)
+#' print(var_analysis)
 #'}
 #'
 print.VariableAnalysis <- function(x, ...){
@@ -251,9 +259,9 @@ print.VariableAnalysis <- function(x, ...){
   invisible(x)
 }
 
-#' @title Print summary information from presence-only evaluation object.
+#' @title Print summary information from model evaluation object (`POEvaluation`).
 #' @description Display the most general and informative characteristics of
-#' a presence-only evaluation object.
+#' a model evaluation object.
 #' @param x (`POEvaluation`) A presence-only evaluation object to be messaged.
 #' It could be the return of function \code{\link{evaluate_po}}.
 #' @param ... Not used.
@@ -272,24 +280,31 @@ print.VariableAnalysis <- function(x, ...){
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
 #'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
@@ -361,9 +376,10 @@ print.POEvaluation <- function(x, ...){
   invisible(x)
 }
 
-#' @title Print summary information from ReducedImageStack object.
+#' @title Print summary information from `ReducedImageStack` object.
 #' @description Display the most general and informative characteristics of
-#' a ReducedImageStack object.
+#' a ReducedImageStack object, including the set threshold, original variables,
+#' and the selected variables and the correlations between them.
 #' @param x (`ReducedImageStack`) A `ReducedImageStack` object to be messaged.
 #' It could be the return of function \code{\link{dim_reduce}}.
 #' @param ... Not used.
@@ -409,9 +425,8 @@ print.ReducedImageStack <- function(x, ...) {
   invisible(x)
 }
 
-#' @title Print summary information from PAConversion object.
-#' @description Display the most general and informative characteristics of
-#' a PAConversion object.
+#' @title Print summary information from `PAConversion` object.
+#' @description Display the equation and parameters of a `PAConversion` object.
 #' @param x (`PAConversion`) A PAConversion object to be messaged.
 #' It could be the return of function \code{\link{convert_to_pa}}.
 #' @param ... Not used.
@@ -429,25 +444,32 @@ print.ReducedImageStack <- function(x, ...) {
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 1L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
@@ -481,9 +503,9 @@ print.PAConversion <- function(x, ...) {
   invisible(x)
 }
 
-#' @title Print summary information from PAConversion object.
-#' @description Display the most general and informative characteristics of
-#' a PAConversion object.
+#' @title Print summary information from `EnvironmentalOutlier` object.
+#' @description Display the environmental variable values comparing to the mean
+#' values of the detected environmental outliers in observations.
 #' @param x (`EnvironmentalOutlier`) A `EnvironmentalOutlier` object to be messaged.
 #' It could be the return of function \code{\link{suspicious_env_outliers}}.
 #' @param ... Not used.
@@ -520,9 +542,10 @@ print.EnvironmentalOutlier <- function(x, ...) {
   invisible(x)
 }
 
-#' @title Print summary information from POIsotree object.
+#' @title Print summary information from `POIsotree` object.
 #' @description Display the most general and informative characteristics of
-#' a fitted POIsotree object.
+#' a fitted POIsotree object. It includes the model information,
+#' model evaluation, variable analysis, etc.
 #' @param x (`POIsotree`) The POIsotree object to be messaged.
 #' It could be the return of function \code{\link{isotree_po}}.
 #' @param ... Not used.
@@ -544,27 +567,35 @@ print.EnvironmentalOutlier <- function(x, ...) {
 #' library(stars)
 #' library(itsdm)
 #'
+#' # Prepare data
 #' data("occ_virtual_species")
-#' occ_virtual_species <- occ_virtual_species %>%
-#'   mutate(id = row_number())
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
 #'
-#' set.seed(11)
-#' occ <- occ_virtual_species %>% sample_frac(0.7)
-#' occ_test <- occ_virtual_species %>% filter(! id %in% occ$id)
-#' occ <- occ %>% select(-id)
-#' occ_test <- occ_test %>% select(-id)
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
 #'
 #' env_vars <- system.file(
 #'   'extdata/bioclim_tanzania_10min.tif',
 #'   package = 'itsdm') %>% read_stars() %>%
 #'   slice('band', c(1, 5, 12, 16))
 #'
+#' # With imperfect_presence mode,
 #' mod <- isotree_po(
-#'   occ = occ, occ_test = occ_test,
-#'   variables = env_vars, ntrees = 50,
-#'   sample_size = 0.8, ndim = 1L,
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 20,
+#'   sample_size = 0.8, ndim = 2L,
 #'   seed = 123L, response = FALSE,
-#'   spatial_response = FALSE)
+#'   spatial_response = FALSE,
+#'   check_variable = FALSE)
 #' print(mod)
 #'}
 #'
@@ -655,6 +686,143 @@ print.POIsotree <- function(x, ...){
                  sprintf(' %s\n', round(val, 3))))
     }))
   }
+
+  # Return
+  invisible(x)
+}
+
+#' @title Print summary information from `FormatOccurrence` object.
+#' @description Display the type and number of training and evaluation dataset
+#' in the formatted observations obtained by
+#' function \code{\link{format_observation}}.
+#' @param x (`FormatOccurrence`) A `FormatOccurrence` object to be messaged.
+#' It could be the return of function \code{\link{format_observation}}.
+#' @param ... Not used.
+#' @return The same object that was passed as input.
+#' @seealso
+#' \code{\link{format_observation}}
+#'
+#' @export
+#' @examples
+#' \donttest{
+#' library(dplyr)
+#' library(itsdm)
+#' data("occ_virtual_species")
+#'
+#' # obs + eval, presence-absence
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
+#' obs_type <- "presence_absence"
+#'
+#' obs_formatted <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = obs_type)
+#'
+#' print(obs_formatted)
+#'}
+#'
+print.FormatOccurrence <- function(x, ...) {
+  cat('Formatted occurrence observations\n')
+
+  # Training
+  cat('  Training observations: \n')
+  cat(sprintf("    Type: %s\n", x$obs_type))
+  cat(sprintf("    No. of observations: %s\n", nrow(x$obs)))
+
+  # eval
+  if (isTRUE(x$has_eval)) {
+    cat('  Evaluation observations: \n')
+    cat(sprintf("    Type: %s\n", x$eval_type))
+    cat(sprintf("    No. of observations: %s\n", nrow(x$eval)))
+  } else {
+    cat('  No observations for evaluation.')
+  }
+
+  # Return
+  invisible(x)
+}
+
+#' @title Print summary information from `EnviChange` object.
+#' @description Display the detected tipping points and percentage of affected
+#' areas due to a changing variable from function
+#' \code{\link{detect_envi_change}}.
+#' @param x (`EnviChange`) A `EnviChange` object to be messaged.
+#' It could be the return of function \code{\link{detect_envi_change}}.
+#' @param ... Not used.
+#' @return The same object that was passed as input.
+#' @seealso
+#' \code{\link{detect_envi_change}}
+#'
+#' @export
+#' @examples
+#' \donttest{
+#' # Using a pseudo presence-only occurrence dataset of
+#' # virtual species provided in this package
+#' library(dplyr)
+#' library(sf)
+#' library(stars)
+#' library(itsdm)
+#' #'
+#' # Prepare data
+#' data("occ_virtual_species")
+#' obs_df <- occ_virtual_species %>% filter(usage == "train")
+#' eval_df <- occ_virtual_species %>% filter(usage == "eval")
+#' x_col <- "x"
+#' y_col <- "y"
+#' obs_col <- "observation"
+#' #'
+#' # Format the observations
+#' obs_train_eval <- format_observation(
+#'   obs_df = obs_df, eval_df = eval_df,
+#'   x_col = x_col, y_col = y_col, obs_col = obs_col,
+#'   obs_type = "presence_only")
+#' #'
+#' env_vars <- system.file(
+#'   'extdata/bioclim_tanzania_10min.tif',
+#'   package = 'itsdm') %>% read_stars() %>%
+#'   slice('band', c(1, 5, 12))
+#' #'
+#' # With imperfect_presence mode,
+#' mod <- isotree_po(
+#'   obs_mode = "imperfect_presence",
+#'   obs = obs_train_eval$obs,
+#'   obs_ind_eval = obs_train_eval$eval,
+#'   variables = env_vars, ntrees = 10,
+#'   sample_size = 0.8, ndim = 1L,
+#'   seed = 123L, response = FALSE,
+#'   spatial_response = FALSE,
+#'   check_variable = FALSE)
+#'
+#' # Use a fixed value
+#' bio1_changes <- detect_envi_change(
+#'   model = mod$model,
+#'   var_occ = mod$vars_train,
+#'   variables = mod$variables,
+#'   shap_nsim = 1,
+#'   target_var = "bio1",
+#'   var_future = 5)
+#'
+#'print(bio1_changes)
+#'}
+#'
+print.EnviChange <- function(x, ...) {
+  # Tipping points
+  cat(sprintf("%s tipping point(s) detected: %s.\n\n",
+              length(x$Tipping_points),
+              paste(round(x$Tipping_points, 2), collapse = ", ")))
+
+  # Percentage of affected areas
+  change_map <- x$variable_contribution_change$change
+  change_map <- change_map[!is.na(change_map)]
+  tb <- data.frame(
+    "Contibuion change" = levels(change_map),
+    "Percentage" = sprintf("%.2f %%", tabulate(change_map) /
+                           length(change_map) * 100))
+  print(tb)
 
   # Return
   invisible(x)

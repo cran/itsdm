@@ -1,7 +1,8 @@
-#' @title Reduce dimensions using auto-correlation between numeric raster layers.
-#' @description Reduce dimensions of raster layers based on Pearson correlation
-#' and a user-defined threshold. NOTE that it only works on numeric variables,
-#' does not work on categorical variables.
+#' @title Remove environmental variables that have high correlation with others.
+#' @description Select environmental variables that have pairwise Pearson
+#' correlation lower than a user-defined threshold.
+#' NOTE that it only works on numeric variables, does not work on
+#' categorical variables.
 #' @param img_stack (\code{stars} or \code{RasterStack})
 #' The image stack to work on.
 #' @param threshold (\code{numeric}) The threshold number of Pearson
@@ -68,12 +69,12 @@ dim_reduce <- function(img_stack = NULL,
     if_stars <- is(img_stack, 'stars')
     if (if_stars) {
         if (length(dim(img_stack)) == 2) {
-            img <- stack(as(img_stack, 'Spatial'))
+            img <- stack(as(img_stack, 'Raster'))
         } else {
           img_stack <- split(img_stack)
-          img <- stack(as(img_stack, 'Spatial'))
+          img <- stack(as(img_stack, 'Raster'))
         }
-    }
+    } else img <- img_stack
 
     # Check preferred variables are all in image stack
     if (is.null(preferred_vars)) preferred_vars <- names(img)

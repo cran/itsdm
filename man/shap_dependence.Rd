@@ -2,16 +2,38 @@
 % Please edit documentation in R/shap_dependence.R
 \name{shap_dependence}
 \alias{shap_dependence}
-\title{Calculate Shapley value based variable dependence.}
+\title{Calculate Shapley value-based variable dependence.}
 \usage{
-shap_dependence(model, var_occ, shap_nsim = 100, visualize = FALSE, seed = 10L)
+shap_dependence(
+  model,
+  var_occ,
+  variables,
+  si = 1000,
+  shap_nsim = 100,
+  visualize = FALSE,
+  seed = 10,
+  pfun = .pfun_shap
+)
 }
 \arguments{
-\item{model}{(\code{isolation_forest}). The isolation forest SDM.
-It could be the item \code{model} of \code{POIsotree} made by function \code{\link{isotree_po}}.}
+\item{model}{(\code{isolation_forest} or other model). The SDM.
+It could be the item \code{model} of \code{POIsotree} made by function \code{\link{isotree_po}}.
+It also could be other user-fitted models as long as the \code{pfun} can work on it.}
 
 \item{var_occ}{(\code{data.frame}, \code{tibble}) The \code{data.frame} style table that
 include values of environmental variables at occurrence locations.}
+
+\item{variables}{(\code{stars}) The \code{stars} of environmental variables.
+It should have multiple \code{attributes} instead of \code{dims}.
+If you have \code{raster} object instead, you
+could use \code{\link{st_as_stars}} to convert it to \code{stars} or use
+\code{\link{read_stars}} directly read source data as a \code{stars}.
+You also could use item \code{variables} of \code{POIsotree} made by function
+\code{\link{isotree_po}}.}
+
+\item{si}{(\code{integer}) The number of samples to generate response curves.
+If it is too small, the response curves might be biased.
+The default value is \code{1000}.}
 
 \item{shap_nsim}{(\code{integer}) The number of Monte Carlo repetitions in SHAP
 method to use for estimating each Shapley value. When the number of variables
@@ -22,7 +44,12 @@ The default is 100.}
 \item{visualize}{(\code{logical}) if \code{TRUE}, plot the variable dependence plots.
 The default is \code{FALSE}.}
 
-\item{seed}{(\code{integer}) The seed for any random progress. The default is \code{10L}.}
+\item{seed}{(\code{integer}) The seed for any random progress. The default is \code{10}.}
+
+\item{pfun}{(\code{function}) The predict function that requires two arguments,
+\code{object} and \code{newdata}.
+It is only required when \code{model} is not \code{isolation_forest}.
+The default is the wrapper function designed for iForest model in \code{itsdm}.}
 }
 \value{
 (\code{ShapDependence}) A list of
@@ -33,7 +60,8 @@ The default is \code{FALSE}.}
 }
 }
 \description{
-Calculate the variable dependence using Shapley values.
+Calculate how a species responses to environmental variables
+using Shapley values.
 }
 \details{
 The values show how each environmental variable independently
@@ -50,31 +78,80 @@ library(stars)
 library(itsdm)
 
 data("occ_virtual_species")
-occ_virtual_species <- occ_virtual_species \%>\%
-  mutate(id = row_number())
+obs_df <- occ_virtual_species \%>\% filter(usage == "train")
+eval_df <- occ_virtual_species \%>\% filter(usage == "eval")
+x_col <- "x"
+y_col <- "y"
+obs_col <- "observation"
 
-set.seed(11)
-occ <- occ_virtual_species \%>\% sample_frac(0.7)
-occ_test <- occ_virtual_species \%>\% filter(! id \%in\% occ$id)
-occ <- occ \%>\% select(-id)
-occ_test <- occ_test \%>\% select(-id)
+# Format the observations
+obs_train_eval <- format_observation(
+  obs_df = obs_df, eval_df = eval_df,
+  x_col = x_col, y_col = y_col, obs_col = obs_col,
+  obs_type = "presence_only")
 
 env_vars <- system.file(
   'extdata/bioclim_tanzania_10min.tif',
   package = 'itsdm') \%>\% read_stars() \%>\%
   slice('band', c(1, 5, 12, 16))
 
+# With imperfect_presence mode,
 mod <- isotree_po(
-  occ = occ, occ_test = occ_test,
-  variables = env_vars, ntrees = 50,
-  sample_size = 0.8, ndim = 1L,
+  obs_mode = "imperfect_presence",
+  obs = obs_train_eval$obs,
+  obs_ind_eval = obs_train_eval$eval,
+  variables = env_vars, ntrees = 30,
+  sample_size = 0.8, ndim = 2L,
   seed = 123L, response = FALSE,
   spatial_response = FALSE,
   check_variable = FALSE)
 
 var_dependence <- shap_dependence(
   model = mod$model,
-  var_occ = mod$var_train \%>\% st_drop_geometry())
+  var_occ = mod$vars_train,
+  variables = mod$variables)
+plot(var_dependence, target_var = "bio1", related_var = "bio16")
+}
+
+\dontrun{
+##### Use Random Forest model as an external model ########
+library(randomForest)
+# Prepare data
+data("occ_virtual_species")
+obs_df <- occ_virtual_species \%>\%
+  filter(usage == "train")
+
+env_vars <- system.file(
+  'extdata/bioclim_tanzania_10min.tif',
+  package = 'itsdm') \%>\% read_stars() \%>\%
+  slice('band', c(1, 5, 12)) \%>\%
+  split()
+
+model_data <- stars::st_extract(
+  env_vars, at = as.matrix(obs_df \%>\% select(x, y))) \%>\%
+  as.data.frame()
+names(model_data) <- names(env_vars)
+model_data <- model_data \%>\%
+  mutate(occ = obs_df[['observation']])
+model_data$occ <- as.factor(model_data$occ)
+
+mod_rf <- randomForest(
+  occ ~ .,
+  data = model_data,
+  ntree = 200)
+
+pfun <- function(X.model, newdata) {
+  # for data.frame
+  predict(X.model, newdata, type = "prob")[, "1"]
+}
+
+shap_dependences <- shap_dependence(
+  model = mod_rf,
+  var_occ = model_data \%>\% select(-occ),
+  variables = env_vars,
+  visualize = FALSE,
+  seed = 10,
+  pfun = pfun)
 }
 
 }
