@@ -78,8 +78,9 @@
 #'   obs_mode = "imperfect_presence",
 #'   obs = obs_train_eval$obs,
 #'   obs_ind_eval = obs_train_eval$eval,
-#'   variables = env_vars, ntrees = 20,
-#'   sample_size = 0.8, ndim = 2L,
+#'   variables = env_vars, ntrees = 5,
+#'   sample_size = 0.8, ndim = 1L,
+#'   nthreads = 1,
 #'   seed = 123L, response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
@@ -90,6 +91,7 @@
 #' pa_thred
 #' plot(pa_thred)
 #'
+#' \dontrun{
 #' # Logistic conversion
 #' pa_log <- convert_to_pa(mod$prediction, method = 'logistic',
 #'                         beta = 0.5, alpha = -.05)
@@ -97,7 +99,8 @@
 #' # Linear conversion
 #' pa_lin <- convert_to_pa(mod$prediction, method = 'linear',
 #'                         a = 1, b = 0)
-#' #'
+#' }
+#'
 convert_to_pa <- function(suitability, # prediction from isotree_sdm
                           method = "logistic",
                           beta = 0.5, # could be NA, for threshold or logistic

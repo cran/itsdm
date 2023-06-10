@@ -1,7 +1,7 @@
 Package: itsdm
 Title: Isolation Forest-Based Presence-Only Species Distribution
         Modeling
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: c(
     person("Lei", "Song", , "lsong@clarku.edu", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4371-1473")),
@@ -42,11 +42,11 @@ VignetteBuilder: knitr
 Encoding: UTF-8
 Language: en-US
 LazyData: true
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2023-01-14 19:53:00 UTC; leisong
+Packaged: 2023-06-10 23:14:26 UTC; leisong
 Author: Lei Song [aut, cre] (<https://orcid.org/0000-0002-4371-1473>),
   Lyndon Estes [ths]
 Maintainer: Lei Song <lsong@clarku.edu>
 Repository: CRAN
-Date/Publication: 2023-01-15 14:30:08 UTC
+Date/Publication: 2023-06-11 00:00:02 UTC

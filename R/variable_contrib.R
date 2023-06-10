@@ -74,7 +74,8 @@
 #'   obs_ind_eval = obs_train_eval$eval,
 #'   variables = env_vars, ntrees = 5,
 #'   sample_size = 0.8, ndim = 1L,
-#'   seed = 123L, response = FALSE,
+#'   seed = 123L, nthreads = 1,
+#'   response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
@@ -113,6 +114,8 @@ variable_contrib <- function(model,
                  nsim = shap_nsim,
                  newdata = var_occ_analysis,
                  pred_wrapper = pfun)
+  out <- as.data.frame(out) # For fastshap >= 0.1.0
+
   out <- list(shapley_values = out,
               feature_values = var_occ_analysis)
   class(out) <- append("VariableContribution", class(out))

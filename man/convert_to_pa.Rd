@@ -99,8 +99,9 @@ mod <- isotree_po(
   obs_mode = "imperfect_presence",
   obs = obs_train_eval$obs,
   obs_ind_eval = obs_train_eval$eval,
-  variables = env_vars, ntrees = 20,
-  sample_size = 0.8, ndim = 2L,
+  variables = env_vars, ntrees = 5,
+  sample_size = 0.8, ndim = 1L,
+  nthreads = 1,
   seed = 123L, response = FALSE,
   spatial_response = FALSE,
   check_variable = FALSE)
@@ -111,6 +112,7 @@ pa_thred <- convert_to_pa(mod$prediction,
 pa_thred
 plot(pa_thred)
 
+\dontrun{
 # Logistic conversion
 pa_log <- convert_to_pa(mod$prediction, method = 'logistic',
                         beta = 0.5, alpha = -.05)
@@ -118,7 +120,8 @@ pa_log <- convert_to_pa(mod$prediction, method = 'logistic',
 # Linear conversion
 pa_lin <- convert_to_pa(mod$prediction, method = 'linear',
                         a = 1, b = 0)
-#'
+}
+
 }
 \references{
 \href{https://github.com/Farewe/virtualspecies/blob/master/R/convertToPA.R}{c

@@ -94,9 +94,10 @@
 #'   obs_mode = "imperfect_presence",
 #'   obs = obs_train_eval$obs,
 #'   obs_ind_eval = obs_train_eval$eval,
-#'   variables = env_vars, ntrees = 30,
+#'   variables = env_vars, ntrees = 10,
 #'   sample_size = 0.8, ndim = 2L,
-#'   seed = 123L, response = FALSE,
+#'   seed = 123L, nthreads = 1,
+#'   response = FALSE,
 #'   spatial_response = FALSE,
 #'   check_variable = FALSE)
 #'
@@ -185,6 +186,7 @@ shap_dependence <- function(model,
   shap_explain <- explain(model, X = var_occ, nsim = shap_nsim,
                           newdata = obs_bg_vars_mat,
                           pred_wrapper = pfun)
+  shap_explain <- as.data.frame(shap_explain) # For fastshap >= 0.1.0
   dependences <- lapply(names(var_occ), function(var) {
     data.frame(x = obs_bg_vars_mat %>% pull(var),
                y = shap_explain %>% pull(var))
