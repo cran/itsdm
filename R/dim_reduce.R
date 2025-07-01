@@ -14,9 +14,9 @@
 #' placed in order. Furthermore, setting preferred_vars does not guarantee
 #' they can survive. For example, one preferred variable that is placed later
 #' has strong correlation with former preferred variable.
-#' @param samples (\code{\link{sf}} or \code{sp}) The samples to reduce
+#' @param samples (\code{\link[sf:sf]{sf}} or \code{sp}) The samples to reduce
 #' dimension.
-#' If not \code{NULL}, it can take \code{\link{sf}}, \code{\link{sfc}},
+#' If not \code{NULL}, it can take \code{\link[sf:sf]{sf}}, \code{\link[sf:sf]{sfc}},
 #' \code{SpatialPointsDataFrame}, \code{SpatialPoints}, etc.
 #' If \code{NULL}, the whole raster stack would be used.
 #' The default is \code{NULL}.
@@ -37,6 +37,7 @@
 #' @importFrom methods is as
 #' @export
 #' @examples
+#' \donttest{
 #' library(sf)
 #' library(itsdm)
 #' library(stars)
@@ -46,6 +47,7 @@
 #'   package = 'itsdm') %>% read_stars()
 #' img_reduced <- dim_reduce(env_vars, threshold = 0.7,
 #'   preferred_vars = c('bio1', 'bio12'))
+#'}
 #'
 dim_reduce <- function(img_stack = NULL,
                        threshold = 0.5,
